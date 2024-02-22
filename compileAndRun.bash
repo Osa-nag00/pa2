@@ -11,3 +11,6 @@ g++ ./$cppFileToCompile -o $fileOutName -std=c++20
 
 #run compiled prog
 ./$fileOutName
+
+# removes executable
+rm ./$fileOutName
