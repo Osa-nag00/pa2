@@ -1,58 +1,122 @@
 #include <iostream>
 #include <stdlib.h>
 #include <time.h>
+#include <thread>
+#include <vector>
+#include <mutex>
+
+#define NUM_GUEST 20
 
 /*GLOBALS*/
+std::mutex mutex;
 bool cupCakeOnPlate = true;
+int numTimesReplaced = 0;
+std::vector<bool> threadsThatHaveEaten(NUM_GUEST, false);
+int threadAllowedInLabyrinth = -1;
 
 /*PROTOTYPES*/
-void labyrinth();
-int genRandomNumber(int upperBound, bool zeroBased);
+void labyrinth(int threadIndex);
+int genRandomNumber(int lowerBound, int upperBound);
+void checkCupcakeAndUpdate();
+int validation();
 
 int main()
 {
+
+    std::vector<std::jthread> jthreads;
     // seed once at the start of the program
     srand(time(NULL));
 
-    return 0;
+    jthreads.push_back(std::jthread(checkCupcakeAndUpdate));
+
+    for (int i = 1; i < NUM_GUEST; i++)
+    {
+
+        jthreads.push_back(std::jthread(labyrinth, i));
+    }
+
+    // keep guessing random numbers until everyone has been through the maze
+    // the main thread will be running this over and over
+    // since this is also using the main thread, this has to go below the rest of the code
+    // so the program does not get stuck here before making the other threads
+    while (numTimesReplaced < NUM_GUEST)
+    {
+        threadAllowedInLabyrinth = genRandomNumber(0, NUM_GUEST);
+    }
+
+    return validation();
 }
 
 // Used to pick which thread to go next
-int genRandomNumber(int upperBound, bool zeroBased)
+int genRandomNumber(int lowerBound, int upperBound)
 {
-    // would usually plus "upperbound + 1" to get 1 - upperbound
-    // but this will be used to index and array so 0 - (upperbound - 1) is fine
-    // TODO: fix comments, just add param to see which one we should do
-    // TODO: rand is critical sections, watch out for this later
-    return zeroBased ? rand() % upperBound : rand() % upperBound + 1;
+    // Generate a random number between lowerBound and upperBound (inclusive)
+    return rand() % (upperBound - lowerBound + 1) + lowerBound;
 }
 
-/*
- * This method will be used as a way to think of the labyrinth
- * A Thread will enter and decide weather it eats to cupcake or not
- * Inside this method should have a critical sections, not allowing threads to alter
- * "cupCakeOnPlate" at the same time.
- * Whether or not the cupcake is eaten can be decided with rng
- *
- * If rng is 1 - eat the cupcake
- * If rng is 0 - leave the cupcake
- */
-void labyrinth()
+void labyrinth(int threadIndex)
 {
-    int rand = 0;
-
-    // will generate numbers between 0 - 1
-    rand = genRandomNumber(2, true);
-
-    // if cupcake on the plate
-    if (cupCakeOnPlate && rand == 1)
+    while (numTimesReplaced < NUM_GUEST)
     {
-        cupCakeOnPlate == false;
+        mutex.lock();
+        if (threadIndex == threadAllowedInLabyrinth && cupCakeOnPlate && !threadsThatHaveEaten.at(threadIndex))
+        {
+            cupCakeOnPlate = false;                      /*eat cupcake*/
+            threadsThatHaveEaten.at(threadIndex) = true; /*set the thread to have eaten the cupcake*/
+            std::cout << "thread: " << threadIndex << " has eaten " << std::endl;
+        }
+        mutex.unlock();
     }
-    else if (cupCakeOnPlate && rand == 0)
+}
+
+// this should only be called by 1 thread
+void checkCupcakeAndUpdate()
+{
+    while (numTimesReplaced < NUM_GUEST)
     {
-        // TODO: same as leaving cupcake at value it enter as
-        // TODO: no need to change (?)
-        cupCakeOnPlate = true;
+        mutex.lock();
+
+        // this is so the counter thread has eaten the cupcake at least once as well
+        if (cupCakeOnPlate && !threadsThatHaveEaten.at(0))
+        {
+
+            // counter thread does not really have to eat the cupcake
+            // this is more so that we know counter thread has seen the cupcake
+            // so we can leave the cupcake, but increase the counter so the rest of the
+            // programs checks still work (i.e numTimesReplaced < NUM_GUEST)
+            numTimesReplaced += 1; /*increase counter*/
+            cupCakeOnPlate = true;
+            threadsThatHaveEaten.at(0) = true;
+            std::cout << "thread: " << 0 << " has ate " << std::endl;
+        }
+
+        // if its this threads turn to be allowed in the labyrinth
+        if (threadAllowedInLabyrinth == 0)
+        {
+            // if the cupcake is not on the place replace it, and add to counter
+            if (!cupCakeOnPlate)
+            {
+                numTimesReplaced += 1;
+                cupCakeOnPlate = true;
+            }
+        }
+
+        mutex.unlock();
     }
+}
+
+int validation()
+{
+
+    for (auto ans : threadsThatHaveEaten)
+    {
+        if (ans == false)
+        {
+            std::cout << "Every thread has not visited the labyrinth at least once" << std::endl;
+            return -1;
+        }
+    }
+
+    std::cout << "Every thread has visited the labyrinth at least once" << std::endl;
+    return 0;
 }
