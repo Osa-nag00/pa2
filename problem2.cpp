@@ -5,7 +5,7 @@
 #include <vector>
 #include <mutex>
 
-#define NUM_GUEST 1000
+#define NUM_GUEST 500
 
 enum RoomStatus
 {
@@ -32,16 +32,6 @@ int main()
         jthreads.push_back(std::jthread(viewVase, i));
     }
 
-    // allow random guess to enter the room
-    // not necessary, just does not make since if
-    // the guess are lining up and not using the available
-    // we can say if they are picked, then that felt the need to go
-    // visit the vase, and then they check if available
-    while (ids.size() < NUM_GUEST)
-    {
-        randomGuestId = genRandomNumber(0, NUM_GUEST);
-    }
-
     return 0;
 }
 
@@ -59,7 +49,7 @@ void viewVase(int threadID)
 
         currentThreadHasVisited = std::find(ids.begin(), ids.end(), threadID) != ids.end();
         // let this thread view the room
-        if (roomStatus == RoomStatus::AVAILABLE && !currentThreadHasVisited && randomGuestId == threadID)
+        if (roomStatus == RoomStatus::AVAILABLE && !currentThreadHasVisited)
         {
             roomStatus == RoomStatus::BUSY;
             std::cout << "thread: " << threadID << " is viewing the vase" << std::endl;

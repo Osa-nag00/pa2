@@ -18,6 +18,14 @@ I Included a bash script that will compile and run the c++ files with version 20
 
    depending on which problem you are testing of course
 
+   For both problems the number of threads can be changed by altering
+
+   ```c
+   #define NUM_GUESS <int>
+   ```
+
+   at the top of the program
+
 ## My Approach / Experimental Evaluation (PROBLEM 1)
 
 When I first starting working through the problem I was too focused on the cupcake, and whether or not It played a larger role in solving the problem. I was unsure as of how I would show that all threads with sharing information would communicate to finish the task. When I stopped thinking that all the threads needed to be doing the same thing and 1 of the threads could be used as a counter, things started to make more sense.
@@ -38,4 +46,10 @@ We could say the the Runtime of the program would just be O(n) where n equals th
 
 ## My Approach / Experimental Evaluation (PROBLEM 2)
 
+This problem was a lot easier to think about than number 1. For a protocol I went with number 2. I think protocol 2 makes the most sense, it allows threads to view the vase when they want as long as the room is available, if not they will have to come back in a few moments to check again. protocol 1 explains its own problem with guess pooling up at the door. And with protocol 3 you would have to wait in a line and not be able to come and go freely.
+
 ## Correctness and Efficiency (PROBLEM 2)
+
+A global vector is kept with all thread ids that have viewed the vase. Along with this, the program will not terminate unless every thread has view the vase at least once.
+
+Since we are just dealing with threads here, the runtime should only be O(n) where n is the number of threads used. However, the longer the program operates(the more threads used), the amount of checks happening the view the vase will increase, This will slow down runtime.
