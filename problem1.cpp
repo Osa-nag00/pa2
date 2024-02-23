@@ -15,7 +15,7 @@ std::vector<bool> threadsThatHaveEaten(NUM_GUEST, false);
 int threadAllowedInLabyrinth = -1;
 
 /*PROTOTYPES*/
-void labyrinth(int threadIndex);
+void labyrinth(int threadID);
 int genRandomNumber(int lowerBound, int upperBound);
 void checkCupcakeAndUpdate();
 int validation();
@@ -54,16 +54,16 @@ int genRandomNumber(int lowerBound, int upperBound)
     return rand() % (upperBound - lowerBound + 1) + lowerBound;
 }
 
-void labyrinth(int threadIndex)
+void labyrinth(int threadID)
 {
     while (numTimesReplaced < NUM_GUEST)
     {
         mutex.lock();
-        if (threadIndex == threadAllowedInLabyrinth && cupCakeOnPlate && !threadsThatHaveEaten.at(threadIndex))
+        if (threadID == threadAllowedInLabyrinth && cupCakeOnPlate && !threadsThatHaveEaten.at(threadID))
         {
-            cupCakeOnPlate = false;                      /*eat cupcake*/
-            threadsThatHaveEaten.at(threadIndex) = true; /*set the thread to have eaten the cupcake*/
-            std::cout << "thread: " << threadIndex << " has eaten " << std::endl;
+            cupCakeOnPlate = false;                   /*eat cupcake*/
+            threadsThatHaveEaten.at(threadID) = true; /*set the thread to have eaten the cupcake*/
+            std::cout << "thread: " << threadID << " has eaten " << std::endl;
         }
         mutex.unlock();
     }
